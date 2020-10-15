@@ -1,32 +1,31 @@
-FROM python:3.5
-MAINTAINER Arne Schubert<atd.schubert@gmail.com>
+FROM python:3.6-slim-buster
 
-ENV MAPPROXY_VERSION 1.11.0
+ARG MAPPROXY_VERSION=1.11.0
+
 ENV MAPPROXY_PROCESSES 4
 ENV MAPPROXY_THREADS 2
+ENV MAPPROXY_DIR /var/lib/mapproxy
 
-RUN set -x \
-  && apt-get update \
-  && DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
-    python-imaging \
-    python-yaml \
-    libproj12 \
-    libgeos-dev \
-    python-lxml \
-    libgdal-dev \
-    build-essential \
-    python-dev \
-    libjpeg-dev \
-    zlib1g-dev \
-    libfreetype6-dev \
-    python-virtualenv \
-  && rm -rf /var/lib/apt/lists/* \
-  && useradd -ms /bin/bash mapproxy \
-  && mkdir -p /mapproxy \
-  && chown mapproxy /mapproxy \
-  && pip install --upgrade pip \
-  && pip install Shapely Pillow requests geojson uwsgi MapProxy==$MAPPROXY_VERSION  \
-  && mkdir -p /docker-entrypoint-initmapproxy.d
+RUN set -ex ; \
+    apt-get update ; \
+    apt-get install --no-install-recommends -y \
+        libproj13 \
+        libgeos-dev \
+        libgdal-dev \
+        build-essential \
+        libjpeg-dev \
+        zlib1g-dev \
+        libfreetype6-dev ; \
+    rm -rf /var/lib/apt/lists/* ; \
+    groupadd -g 200 mapproxy ; \
+    useradd -g 200 -u 200 -m -s /bin/bash mapproxy ; \
+    mkdir -p $MAPPROXY_DIR ; \
+    chown mapproxy.mapproxy $MAPPROXY_DIR ; \
+    pip install --upgrade pip ; \
+    pip install Shapely Pillow requests geojson uwsgi lxml MapProxy==$MAPPROXY_VERSION
+
+RUN set -ex ; \
+    mkdir -p /docker-entrypoint.d
 
 COPY docker-entrypoint.sh /
 ENTRYPOINT ["/docker-entrypoint.sh"]
